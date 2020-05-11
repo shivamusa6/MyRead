@@ -6,15 +6,50 @@ import { Switch, Route } from "react-router-dom";
 import { getAll } from "./BooksAPI";
 
 class BooksApp extends React.Component {
-  async componentDidMount() {
-    try {
-      const books = await getAll();
-      this.setState({ books: books });
-      this.state.addToShelf(books);
-    } catch (error) {
-      console.log(error);
-    }
+
+  componentDidMount = () => {
+    getAll()
+      .then(books => {
+        this.setState({ books: books });
+        this.addToShelf(books)
+      })
+      .catch(err => {
+        console.log(err);
+      });
+  };
+
+  addToShelf = (books) => {
+    const currentlyReading = books.filter((book) => book.shelf === "currentlyReading");
+    const wantToRead = books.filter((book) => book.shelf === "wantToRead");
+    const read = books.filter((book) => book.shelf === "read");
+    this.setState({ currentlyReading, read, wantToRead });
   }
+
+  move = (shelf, result, book) => {
+    const newBooks = this.state.books.map((moveBook) => {
+      const foundID = result[shelf].find(
+        (bookId) => bookId === moveBook.id
+      )
+      if (foundID) {
+        moveBook.shelf = shelf;
+      }
+      return moveBook;
+    });
+
+    let pushToState = true;
+    for (var i = 0; i < newBooks.length; i++) {
+      if (book.id === newBooks[i].id) {
+        pushToState = false;
+      }
+    }
+    if (pushToState) {
+      let newBook = Object.assign({}, book);
+      newBook.shelf = shelf;
+      newBooks.push(newBook);
+    }
+    this.addToShelf(newBooks);
+  };
+
 
   constructor() {
     super();
@@ -22,27 +57,7 @@ class BooksApp extends React.Component {
       books: [],
       currentlyReading: [],
       read: [],
-      wantToRead: [],
-      addToShelf: (books) => {
-        console.log(books)
-        const currentlyReading = books.filter((book) => book.shelf === "currentlyReading");
-        console.log(currentlyReading);
-        const wantToRead = books.filter((book) => book.shelf === "wantToRead");
-        const read = books.filter((book) => book.shelf === "read");
-        this.setState({ currentlyReading, read, wantToRead });
-      },
-      move: (shelf, result) => {
-        const newBooks = this.state.books.map((moveBook) => {
-          const foundID = result[shelf].find(
-            (bookId) => bookId === moveBook.id
-          );
-          if (foundID) {
-            moveBook.shelf = shelf;
-          }
-          return moveBook;
-        });
-        this.state.addToShelf(newBooks);
-      },
+      wantToRead: []
     };
   }
 
@@ -53,12 +68,12 @@ class BooksApp extends React.Component {
           <Route
             exact
             path="/"
-            render={(routeProps) => <HomePage {...this.state} />}
+            render={(routeProps) => <HomePage {...this.state} move={this.move} />}
           />
           <Route
             exact
             path="/search"
-            render={(routeProps) => <SearchPage {...this.state} />}
+            render={(routeProps) => <SearchPage {...this.state} move={this.move} />}
           />
         </Switch>
       </div>
