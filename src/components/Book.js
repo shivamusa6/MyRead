@@ -3,12 +3,12 @@ import { update } from "../BooksAPI";
 
 class Book extends React.Component {
   handleChange = async (e) => {
-    const book = this.props;
+    let book = this.props;
     const shelf = e.target.value;
     try {
       const result = await update(book, shelf);
       if (result) {
-        this.props.move(shelf, result);
+        this.props.move(shelf, result,book);
       }
     } catch (error) { }
   };
